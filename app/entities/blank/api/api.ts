@@ -1,0 +1,1 @@
+export const getBlank = useAPI(() => $fetch('/bff/blank'))
