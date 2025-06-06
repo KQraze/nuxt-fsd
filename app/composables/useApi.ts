@@ -20,8 +20,6 @@ type UseApiOptions<Result, AdaptedResult, AdaptedError> = {
   errorAdapter?: (error: unknown) => AdaptedError;
 
   /**
-   * `Has defects!! Do not use anything except Object`
-   *
    * Cache duration in seconds.
    * If provided, the cached data will be considered valid for this duration.
    */
@@ -85,8 +83,8 @@ type UseApiReturn<Data, ErrorT = unknown, Args extends any[] = any[]> = {
    * @returns A reactive reference to the grouped results.
    */
   getGroupByArg: <I extends keyof Args>(
-    index?: I,
-    arg?: Args[I],
+      index?: I,
+      arg?: Args[I],
   ) => ComputedRef<Data[]>;
 
   /**
@@ -102,7 +100,7 @@ type UseApiReturn<Data, ErrorT = unknown, Args extends any[] = any[]> = {
   /**
    * Event triggered when a request completes, regardless of success or failure.
    */
-  onFinally: SubscribeEvent<never>;
+  onFinally: SubscribeEvent<void>;
 };
 
 /**
@@ -116,24 +114,24 @@ type UseApiReturn<Data, ErrorT = unknown, Args extends any[] = any[]> = {
  * @returns {UseApiReturn<Result, AdaptedError, Args>}
  */
 export function useAPI<
-  Result,
-  AdaptedResult = Result,
-  AdaptedError = unknown,
-  Args extends any[] = any[],
+    Result,
+    AdaptedResult = Result,
+    AdaptedError = unknown,
+    Args extends any[] = any[],
 >(
-  request: (...args: Args) => Promise<Result>,
-  options?: UseApiOptions<Result, AdaptedResult, AdaptedError>,
+    request: (...args: Args) => Promise<Result>,
+    options?: UseApiOptions<Result, AdaptedResult, AdaptedError>,
 ): UseApiReturn<
-  AdaptedResult extends Result ? Result : AdaptedResult,
-  AdaptedError,
-  Args
+    AdaptedResult extends Result ? Result : AdaptedResult,
+    AdaptedError,
+    Args
 > {
   type Data = AdaptedResult extends Result ? Result : AdaptedResult;
   type CachedData = Data & { fetchedAt?: Date };
 
   const successHook = createEventHook<Data>();
   const errorHook = createEventHook<AdaptedError>();
-  const finallyHook = createEventHook<never>();
+  const finallyHook = createEventHook<void>();
 
   const isLoading = ref(false);
   const error = ref<AdaptedError | null>(null);
@@ -145,7 +143,7 @@ export function useAPI<
   const isCacheValid = (data: CachedData): boolean => {
     if (!data.fetchedAt || !options?.cacheTime) return true;
     const expiration =
-      new Date(data.fetchedAt).getTime() + options.cacheTime * 1000;
+        new Date(data.fetchedAt).getTime() + options.cacheTime * 1000;
     return Date.now() < expiration;
   };
 
@@ -156,16 +154,16 @@ export function useAPI<
 
   const saveToCache = (key: string, data: Data) => {
     const cached: CachedData = options?.cacheTime
-      ? { ...data, fetchedAt: new Date() }
-      : (data as CachedData);
+        ? { ...data, fetchedAt: new Date() }
+        : (data as CachedData);
     cache.value.set(key, cached);
   };
 
   const adaptResponse = (response: Result): Data =>
-    options?.adapter ? (options.adapter(response) as Data) : (response as Data);
+      options?.adapter ? (options.adapter(response) as Data) : (response as Data);
 
   const adaptError = (err: unknown): AdaptedError =>
-    options?.errorAdapter ? options.errorAdapter(err) : (err as AdaptedError);
+      options?.errorAdapter ? options.errorAdapter(err) : (err as AdaptedError);
 
   const execute = async (ignoreCache = false, ...args: Args): Promise<Data> => {
     const cacheKey = getCacheKey(args);
@@ -211,17 +209,17 @@ export function useAPI<
   };
 
   const getGroupByArg = <I extends keyof Args>(
-    index?: I,
-    arg?: Args[I],
+      index?: I,
+      arg?: Args[I],
   ): ComputedRef<Data[]> => {
     return computed(() =>
-      [...cache.value.entries()]
-        .filter(([key]) => {
-          if (index === undefined) return true;
-          const parsedArgs = JSON.parse(key);
-          return JSON.stringify(parsedArgs[index]) === JSON.stringify(arg);
-        })
-        .map(([, value]) => value),
+        [...cache.value.entries()]
+            .filter(([key]) => {
+              if (index === undefined) return true;
+              const parsedArgs = JSON.parse(key);
+              return JSON.stringify(parsedArgs[index]) === JSON.stringify(arg);
+            })
+            .map(([, value]) => value),
     );
   };
 

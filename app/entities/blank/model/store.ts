@@ -1,6 +1,6 @@
-export const useStore = defineStore('blank', () => {
-    const { getBlank } = blankEntity;
+import { getBlank } from '../api'
 
+export const useStore = defineStore('blank', () => {
     /** use api refs */
     const blank = getBlank.getRef([])
 
