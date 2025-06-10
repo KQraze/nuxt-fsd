@@ -1,15 +1,5 @@
-import { getBlank } from '../api'
+import { getPosts } from "../api";
 
-export const useStore = defineStore('blank', () => {
-    /** use api refs */
-    const blank = getBlank.getRef([])
-
-    /** use api hooks */
-    getBlank.onSuccess((data) => {
-        // you logic
-    })
-
-    return {
-        blank
-    }
-})
+export const postsQuery = () => createQuery("posts", getPosts, {
+  onSuccess: (data) => console.log(data)
+});

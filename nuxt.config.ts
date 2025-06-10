@@ -77,6 +77,7 @@ export default defineNuxtConfig({
   },
 
   nitro: {
+    preset: 'node-server',
     imports: {
       dirs: ["../shared/index.ts"],
     },

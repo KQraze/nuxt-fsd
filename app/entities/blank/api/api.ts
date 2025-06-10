@@ -1,1 +1,1 @@
-export const getBlank = useAPI(() => $fetch('/bff/blank'))
+export const getPosts = () => $fetch("/bff/posts");
