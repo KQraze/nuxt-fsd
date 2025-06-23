@@ -1,5 +1,4 @@
-import { getPosts } from "../api";
-
-export const postsQuery = () => createQuery("posts", getPosts, {
-  onSuccess: (data) => console.log(data)
-});
+export const getAll = () =>
+  useFetch(() => "/bff/posts", { key: "posts" });
+export const getOne = (id: string) =>
+  useFetch(() => `/bff/posts/${id}`, cachedApiOptions({ key: `posts-${id}` }));

@@ -1,15 +1,11 @@
 import svgLoader from "vite-svg-loader";
+import type { CachedEventHandlerOptions } from "nitropack";
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  devtools: { enabled: true },
-  typescript: { strict: true },
-
   runtimeConfig: {
-    public: {
-      apiUrl:
-        process.env.NUXT_PUBLIC_API_URL
-    },
+    apiUrl: process.env.NUXT_PUBLIC_API_URL,
+    cacheSettings: { maxAge: 3600 } satisfies CachedEventHandlerOptions,
   },
 
   modules: [
@@ -77,7 +73,6 @@ export default defineNuxtConfig({
   },
 
   nitro: {
-    preset: 'node-server',
     imports: {
       dirs: ["../shared/index.ts"],
     },
