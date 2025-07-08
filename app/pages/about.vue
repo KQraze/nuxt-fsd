@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const currentPost = ref(1)
+const currentPost = ref(1);
 
 const { data } = postEntity.useOne(currentPost);
 </script>
@@ -7,7 +7,7 @@ const { data } = postEntity.useOne(currentPost);
 <template>
   <div>
     <UButton to="/">дом</UButton>
-    <UButton to="/">следщ</UButton>
+    <UButton @click="currentPost++">следщ</UButton>
     {{ data }}
   </div>
 </template>

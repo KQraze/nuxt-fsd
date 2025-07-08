@@ -23,7 +23,7 @@ export function useAPI<DataT, ErrorT = Error>(
 ): UseApiReturn<DataT, ErrorT>;
 
 export function useAPI<DataT, ErrorT = Error>(
-  key: string,
+  key: string | Ref<string> | ComputedRef<string>,
   handler: () => Promise<DataT>,
   options?: UseApiOptions<DataT>,
 ): UseApiReturn<DataT, ErrorT>;
@@ -82,7 +82,7 @@ export function useAPI<DataT, ErrorT = Error>(
       if (cause === "refresh:manual") return;
 
       if (options?.useCache) {
-        return useNuxtData(key).data.value;
+        return useNuxtData(key).data.value as DataT;
       }
 
       return nuxtApp.isHydrating
