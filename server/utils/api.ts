@@ -3,7 +3,7 @@ import type { NitroFetchOptions } from "nitropack";
 
 export const useServerAPI = (event: H3Event) => {
   const fetchInstance = $fetch.create({
-    baseURL: useRuntimeConfig().public.apiUrl,
+    baseURL: useRuntimeConfig().apiUrl,
     onRequest({ options }) {
       const token = getCookie(event, "token");
       if (token) {

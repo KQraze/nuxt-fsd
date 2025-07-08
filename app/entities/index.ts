@@ -1,1 +1,1 @@
-export * as blankEntity from "./blank";
+export * as postEntity from "./post";

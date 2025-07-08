@@ -19,7 +19,7 @@ const approaches = [
 
 const formats = ["Eslint", "Prettier"];
 
-const { data, refresh } = blankEntity.postsQuery();
+const { data, refresh } = postEntity.useAll();
 </script>
 
 <template>
@@ -27,6 +27,7 @@ const { data, refresh } = blankEntity.postsQuery();
     class="w-full min-h-dvh flex justify-center items-center flex-col gap-4 bg-[url('~/assets/img/background.png')] bg-cover bg-no-repeat"
   >
     <UButton @click="refresh()">Найти</UButton>
+    <UButton to="/about">абоут</UButton>
     {{ data }}
     <h1 class="text-5xl font-medium mb-8">WELCOME DEAR DEVELOPER!!!</h1>
     <h2 class="text-3xl">STEW IN PROJECT:</h2>

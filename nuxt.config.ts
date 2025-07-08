@@ -1,4 +1,5 @@
 import svgLoader from "vite-svg-loader";
+import type { CachedEventHandlerOptions } from 'nitropack'
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -6,10 +7,8 @@ export default defineNuxtConfig({
   typescript: { strict: true },
 
   runtimeConfig: {
-    public: {
-      apiUrl:
-        process.env.NUXT_PUBLIC_API_URL
-    },
+    apiUrl: process.env.NUXT_PUBLIC_API_URL,
+    cacheSettings: {} satisfies CachedEventHandlerOptions
   },
 
   modules: [

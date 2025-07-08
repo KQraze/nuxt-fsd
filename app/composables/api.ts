@@ -1,22 +1,53 @@
-import type { NuxtApp, AsyncDataOptions, AsyncData } from "#app";
+import type { AsyncDataOptions, AsyncData } from "#app";
+import type { SubscribeEvent } from "~/shared";
 
-export type CreateQueryOptions<
-  DataT,
-  ResT = DataT,
-> = AsyncDataOptions<DataT> & {
-  transform?: (data: DataT) => ResT;
-  onSuccess?: EventHandler<ResT extends DataT ? DataT : ResT>;
+import { isRef } from "vue";
+
+export type UseApiOptions<DataT> = AsyncDataOptions<DataT> & {
+  onSuccess?: EventHandler<DataT>;
   onError?: EventHandler<any>;
   onFinally?: EventHandler<undefined>;
+  useCache?: boolean;
 };
 
-export function createQuery<DataT, ResT = DataT, ErrorT = Error>(
-  key: string | Ref<string> | ComputedRef<string>,
-  handler: (nuxtApp?: NuxtApp) => Promise<DataT>,
-  options: CreateQueryOptions<DataT, ResT> = {},
-) {
-  type ResultT = ResT extends DataT ? DataT : ResT;
-  const successHook = createEventHook<ResultT>();
+export type UseApiReturn<DataT, ErrorT> = AsyncData<DataT, ErrorT> & {
+  isLoading: ComputedRef<boolean>;
+  onSuccess: SubscribeEvent<DataT>;
+  onError: SubscribeEvent<any>;
+  onFinally: SubscribeEvent<undefined>;
+};
+
+export function useAPI<DataT, ErrorT = Error>(
+  handler: () => Promise<DataT>,
+  options?: UseApiOptions<DataT>,
+): UseApiReturn<DataT, ErrorT>;
+
+export function useAPI<DataT, ErrorT = Error>(
+  key: string,
+  handler: () => Promise<DataT>,
+  options?: UseApiOptions<DataT>,
+): UseApiReturn<DataT, ErrorT>;
+
+export function useAPI<DataT, ErrorT = Error>(
+  keyOrHandler:
+    | string
+    | Ref<string>
+    | ComputedRef<string>
+    | (() => Promise<DataT>),
+  handlerOrOptions: (() => Promise<DataT>) | UseApiOptions<DataT> = {},
+  maybeOptions?: UseApiOptions<DataT>,
+): UseApiReturn<DataT, ErrorT> {
+  const isKeyProvided = typeof keyOrHandler === "string" || isRef(keyOrHandler);
+
+  const key = isKeyProvided ? keyOrHandler : undefined;
+  const handler = isKeyProvided
+    ? (handlerOrOptions as () => Promise<DataT>)
+    : (keyOrHandler as () => Promise<DataT>);
+  const options = isKeyProvided
+    ? (maybeOptions ?? {})
+    : (handlerOrOptions as UseApiOptions<DataT>);
+
+  const successHook = createEventHook<DataT>();
   const errorHook = createEventHook<ErrorT>();
   const finallyHook = createEventHook<undefined>();
 
@@ -24,36 +55,49 @@ export function createQuery<DataT, ResT = DataT, ErrorT = Error>(
   if (options.onError) errorHook.on(options.onError);
   if (options.onFinally) finallyHook.on(options.onFinally);
 
-  const asyncData = useAsyncData<DataT, ErrorT>(
-    key,
-    async () => {
-      try {
-        const data = await handler();
-        if (!options.transform) successHook.trigger(data as ResultT);
-        return data;
-      } catch (e) {
-        errorHook.trigger(e as ErrorT);
-        throw e;
-      } finally {
-        finallyHook.trigger(undefined);
+  const wrappedHandler = async () => {
+    try {
+      const data = await handler();
+      if (!options.transform) successHook.trigger(data as DataT);
+      return data;
+    } catch (e) {
+      errorHook.trigger(e as ErrorT);
+      throw e;
+    } finally {
+      finallyHook.trigger(undefined);
+    }
+  };
+
+  const finalOptions: AsyncDataOptions<DataT> = {
+    ...options,
+    transform(data) {
+      if (options.transform) {
+        const transformed = options.transform(data);
+        successHook.trigger(transformed as DataT);
+        return transformed as DataT;
       }
+      return data;
     },
-    {
-      ...options,
-      transform(data) {
-        if (options.transform) {
-          const transformed = options.transform(data);
-          successHook.trigger(transformed as ResultT);
-          return transformed as DataT;
-        }
-        return data;
-      },
-      getCachedData(key, nuxtApp, { cause }) {
-        if (cause === "refresh:manual") return;
-        return nuxtApp.payload?.data?.[key] ?? nuxtApp.static?.data?.[key];
-      },
+    getCachedData(key, nuxtApp, { cause }) {
+      if (cause === "refresh:manual") return;
+
+      if (options?.useCache) {
+        return useNuxtData(key).data.value;
+      }
+
+      return nuxtApp.isHydrating
+        ? nuxtApp.payload.data[key]
+        : nuxtApp.static.data[key];
     },
-  );
+  };
+
+  const asyncData = isKeyProvided
+    ? useAsyncData<DataT, ErrorT>(
+        key as string | Ref<string> | ComputedRef<string>,
+        wrappedHandler,
+        finalOptions,
+      )
+    : useAsyncData<DataT, ErrorT>(wrappedHandler, finalOptions);
 
   return {
     ...asyncData,
@@ -61,10 +105,5 @@ export function createQuery<DataT, ResT = DataT, ErrorT = Error>(
     onSuccess: successHook.on,
     onError: errorHook.on,
     onFinally: finallyHook.on,
-  } as AsyncData<DataT, ErrorT> & {
-    isLoading: ComputedRef<boolean>;
-    onSuccess: typeof successHook.on;
-    onError: typeof errorHook.on;
-    onFinally: typeof finallyHook.on;
-  };
+  } as UseApiReturn<DataT, ErrorT>;
 }
